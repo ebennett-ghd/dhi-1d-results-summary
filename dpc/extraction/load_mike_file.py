@@ -11,25 +11,18 @@ Created on 2021-10-27
 """
 
 import mikeio1d
+from mikeio1d.res1d import ResultData, Diagnostics, Connection
 
-from typing import Tuple
 from dpc.utils.logger import logger as log
 
-from DHI.Mike1D.ResultDataAccess import (
-    ResultData,
-    ResultDataSearch,
-)
-from DHI.Mike1D.Generic import Diagnostics, Connection
 
-
-def load_file(file_path: str) -> Tuple[ResultData, ResultDataSearch]:
+def load_file(file_path: str) -> ResultData:
     log_entry = f"Loading file: {file_path}"
     log.info(log_entry)
     resultData = ResultData()
     resultData.Connection = Connection.Create(file_path)
     resultData.Load(Diagnostics(log_entry))
-    searcher = ResultDataSearch(resultData)  # searcher helps to find reaches, nodes and catchments
-    return resultData, searcher
+    return resultData
 
 
 if __name__ == "__main__":

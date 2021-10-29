@@ -11,8 +11,8 @@ Created on 2021-10-27
 """
 
 import mikeio1d
-from DHI.Mike1D.ResultDataAccess import ResultData
-from typing import Dict, Tuple
+from mikeio1d.res1d import ResultData
+from typing import Dict, Tuple, Callable
 
 from dpc.utils.logger import logger as log
 
@@ -25,16 +25,18 @@ def get_data(data: ResultData) -> Tuple[Dict[str, any], str]:
     node_y_coordinates = get_node_coordinates(data, "y")
     node_invert_levels = get_node_invert_levels(data)
     projection = get_projection(data)
+    max_water_levels = get_aggregated_water_levels(data, max)
 
     node_ids = set(  # construct list of nodes
-        list(node_invert_levels.keys())
+        list(node_x_coordinates.keys())
     )
 
     for node_id in node_ids:
         all_node_data[node_id] = {
             "x": node_x_coordinates[node_id],
             "y": node_y_coordinates[node_id],
-            "invert_levels": node_invert_levels[node_id],
+            "invert_level": node_invert_levels[node_id] if node_id in node_invert_levels.keys() else None,
+            "max_water_level": max_water_levels[node_id] if node_id in max_water_levels.keys() else None,
         }
 
     return all_node_data, projection
@@ -66,9 +68,29 @@ def get_node_invert_levels(data: ResultData) -> Dict[str, float]:
     invert_levels = {}
     nodes = list(data.Nodes)
     for node in nodes:
-        invert_levels[node.Id] = node.BottomLevel
+        try:
+            invert_levels[node.Id] = node.BottomLevel
+        except:
+            log.warning(f"Bottom level data not available for node: {node.Id}")
     return invert_levels
 
+
+def get_aggregated_water_levels(
+    data: ResultData,
+    aggregator: Callable = None,
+) -> Dict[str, any]:
+    log.info("Calling get_node_invert_levels")
+    max_water_level = {}
+    nodes = list(data.Nodes)
+    for node in nodes:
+        data_sets = list(node.DataItems)
+        for data_set in data_sets:
+            if data_set.Quantity.Id in ["WaterLevel", "Water Level"]:
+                data = list(data_set.TimeData)
+                max_water_level[node.Id] = aggregator(data) if aggregator is not None else data
+                break
+
+    return max_water_level
 
 
 if __name__ == "__main__":

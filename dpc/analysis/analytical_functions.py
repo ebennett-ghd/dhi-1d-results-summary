@@ -10,7 +10,7 @@ Created on 2021-10-27
 @email: edmund.bennett@ghd.com
 """
 
-from typing import List, Dict
+from typing import List, Dict, Callable
 
 from dpc.utils.logger import logger as log
 
@@ -18,7 +18,7 @@ from dpc.utils.logger import logger as log
 def extract_extremum(
     data: List[Dict[str, any]],
     data_parameter: str,
-    aggregation_function: lambda x: x,
+    aggregation_function: Callable,
 ) -> Dict[str, any]:
     """
     Extract extremum of indicated parameter from data
@@ -35,7 +35,7 @@ def extract_extremum(
 def extract_extrema(
     data: List[Dict[str, any]],
     data_parameter: str,
-    aggregation_function,
+    aggregation_function: Callable,
     group_by_parameter: str = None,
 ) -> List[Dict[str, any]]:
     """
