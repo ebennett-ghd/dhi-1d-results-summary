@@ -144,9 +144,19 @@ def get_all_node_data(file_paths):
     all_node_data = []
     for file_path in file_paths:
         log.debug(f"Loading file: {file_path}")
-        directory_path, file_name = split(file_path)
+        _, file_name = split(file_path)
+        file_extension = file_name.split(".")[1].lower()
         data = load_file(file_path)
-        all_data_from_file, projection = get_data(data)
+
+        include_nodes, include_reaches = True, False
+        if file_extension == "res11":
+            include_nodes, include_reaches = False, True
+
+        all_data_from_file, projection = get_data(
+            data,
+            include_nodes=include_nodes,
+            include_reaches=include_reaches,
+        )
         for node_id, values in all_data_from_file.items():
             node_payload = {
                 "file": file_name,
@@ -165,6 +175,7 @@ def main():
     file_paths, output_directory, from_crs, no_round_outputs = parse_arguments()
 
     if file_paths is None:
+        log.critical("Check input arguments")
         return
 
     # get all data
@@ -196,8 +207,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-    # path_to_geojson = "c:/Users/ebennett2/Downloads/test_fence.geojson"
-    # with open(path_to_geojson, "rb") as geo_file:
-    #     geo = geo_file.read()
-    # shp = convert_geojson_to_shp(geo)

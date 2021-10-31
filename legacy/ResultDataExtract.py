@@ -6,11 +6,7 @@ clr.AddReference("System")
 import System
 from System import Array, StringComparer
 
-from mikeio1d.res1d import ResultData, Diagnostics, Connection, MikeImport, MikeProducts
-
-products = list(MikeImport.InstalledProducts())
-product = products[0]
-MikeImport.Setup(product);
+from mikeio1d.res1d import ResultData, Diagnostics, Connection
 
 from DHI.Mike1D.ResultDataAccess import ResultData, ResultDataSearch, Filter, DataItemFilterName, ItemTypeGroup
 from DHI.Mike1D.Generic import Diagnostics, Connection
