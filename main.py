@@ -10,6 +10,7 @@ Created on 2021-10-26
 @email: edmund.bennett@ghd.com
 """
 
+import mikeio1d
 from typing import List, Tuple, Union
 from os.path import abspath, join, split, isdir
 from os import getcwd

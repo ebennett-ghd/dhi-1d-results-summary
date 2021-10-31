@@ -10,7 +10,6 @@ Created on 2021-10-27
 @email: edmund.bennett@ghd.com
 """
 
-import mikeio1d
 from mikeio1d.res1d import ResultData, Diagnostics, Connection
 
 from dpc.utils.logger import logger as log
