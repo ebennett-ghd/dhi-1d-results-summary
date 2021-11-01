@@ -201,7 +201,7 @@ def main():
             nodes=all_node_data,
         )
 
-        with open("test.geojson", "w") as geo_file:
+        with open("inputs/test.geojson", "w") as geo_file:
             dump(all_node_geojson, geo_file)
 
 
