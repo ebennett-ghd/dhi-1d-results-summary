@@ -192,7 +192,7 @@ def main():
 
     construct_formatted_csv(
         all_node_data,
-        join(abspath(output_directory),"formatted_node_data"),
+        join(abspath(output_directory), "formatted_node_data"),
     )
 
     if from_crs is not None:
