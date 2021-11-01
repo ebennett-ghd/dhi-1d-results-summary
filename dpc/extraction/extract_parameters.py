@@ -69,7 +69,7 @@ def get_node_coordinates(data: ResultData, coordinate: str) -> Dict[str, float]:
         if coordinate == "x":
             coord = node.get_XCoordinate()
         elif coordinate == "y":
-            coord = node.get_XCoordinate()
+            coord = node.get_YCoordinate()
         else:
             log.critical(f"Spatial coordinate not property specified. Got: {coordinate}")
         coordinates[node.Id] = coord
