@@ -83,7 +83,7 @@ def parse_arguments() -> Tuple[Union[None, List[str]], Union[None, str], Union[N
     parser.add_argument(
         "-r",
         "--no-round-outputs",
-        help='do not round decimal outputs to three significant figures',
+        help='do not round decimal outputs to three decimal places',
         default=True,
         action="store_false",
     )
