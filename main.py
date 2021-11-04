@@ -12,14 +12,16 @@ Created on 2021-10-26
 
 import mikeio1d
 from typing import List, Tuple, Union
+from sys import argv
 from os.path import abspath, join, split, isdir
 from os import getcwd
 from json import dump
 import argparse
+import getpass
 
 from dpc.extraction.load_mike_file import load_file
 from dpc.extraction.extract_parameters import get_data
-from dpc.spatial.construct_spatial_file import (
+from dpc.output.construct_spatial_file import (
     construct_csv,
     construct_formatted_csv,
     construct_geojson,
@@ -169,8 +171,13 @@ def get_all_node_data(file_paths):
     return all_node_data
 
 
-def main():
+def main(argv):
+
     # configuration parameters
+
+    current_user = getpass.getuser()
+    arguments = " ".join(argv)
+    log.info(f"User: {current_user} calling script with inputs: {arguments}")
 
     file_paths, output_directory, from_crs, no_round_outputs = parse_arguments()
 
@@ -204,6 +211,8 @@ def main():
         with open("inputs/test.geojson", "w") as geo_file:
             dump(all_node_geojson, geo_file)
 
+    # construct_run_log()
+
 
 if __name__ == "__main__":
-    main()
+    main(argv)

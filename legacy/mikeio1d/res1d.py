@@ -368,7 +368,7 @@ class Res1D:
         public IRes1DCatchments Catchments { get; set; }
         //
         // Summary:
-        //     A WKT string for a spatial reference system.
+        //     A WKT string for a output reference system.
         public string ProjectionString { get; set; }
         """
         return self._data

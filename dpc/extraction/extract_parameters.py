@@ -22,7 +22,7 @@ def get_data(
     include_nodes: bool,
     include_reaches: bool,
 ) -> Tuple[Dict[str, any], str]:
-    log.info("Calling get_data")
+    log.debug("Calling get_data")
     all_node_data = {}
 
     node_x_coordinates = get_node_coordinates(data, "x")
@@ -56,12 +56,12 @@ def get_data(
 
 
 def get_projection(data: ResultData) -> str:
-    log.info("Calling get_projection")
+    log.debug("Calling get_projection")
     return data.ProjectionString
 
 
 def get_node_coordinates(data: ResultData, coordinate: str) -> Dict[str, float]:
-    log.info("Calling get_node_coordinates")
+    log.debug("Calling get_node_coordinates")
     coordinates = {}
     nodes = list(data.Nodes)
     for node in nodes:
@@ -81,7 +81,7 @@ def get_node_invert_levels(
     include_nodes: bool = True,
     include_reaches: bool = True,
 ) -> Dict[str, float]:
-    log.info("Calling get_node_invert_levels")
+    log.debug("Calling get_node_invert_levels")
     invert_levels = {}
 
     if hasattr(data, "Nodes") and include_nodes:
@@ -115,7 +115,7 @@ def get_aggregated_water_levels(
     include_nodes: bool = True,
     include_reaches: bool = True,
 ) -> Dict[str, any]:
-    log.info("Calling get_node_invert_levels")
+    log.debug("Calling get_node_invert_levels")
     max_water_level = {}
 
     if hasattr(data, "Nodes") and include_nodes:

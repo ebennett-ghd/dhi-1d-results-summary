@@ -13,11 +13,8 @@ Created on 2021-05-18
 from os.path import isfile, split
 import re
 from typing import List
-import networkx as nx
-import matplotlib.pyplot as plt
 
-from arc.dto.log_entry import LogEntry
-import arc.utils.logger as log
+import dpc.utils.logger as log
 
 
 class LogTracer:

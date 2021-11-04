@@ -17,6 +17,11 @@ from pyproj import Proj, transform
 from dpc.utils.logger import logger as log
 
 
+def construct_run_log():
+    log.debug("Calling construct_run_log")
+
+
+
 def construct_csv(
     data: List[Dict[str, any]],
     output_file_path_no_extension: str,
@@ -37,6 +42,10 @@ def construct_csv(
     if "max_of_max" in column_names:  # ensure max of max is at the end
         column_names.remove("max_of_max")
         column_names = column_names + ["max_of_max"]
+
+    if "critical_duration" in column_names:  # ensure critical duration is after max of max!
+        column_names.remove("critical_duration")
+        column_names = column_names + ["critical_duration"]
 
     if "file" in column_names:  # ensure max of max is at the end
         column_names.remove("file")
@@ -101,6 +110,7 @@ def construct_formatted_csv(
                     node_parameters_set = True
                 node_outputs[unique_file] = datum["max_water_level"]
         node_outputs["max_of_max"] = max(file_maxima) if file_maxima else None
+        node_outputs["critical_duration"] = node_outputs["max_of_max"]
         formatted_data.append(
             node_outputs
         )
