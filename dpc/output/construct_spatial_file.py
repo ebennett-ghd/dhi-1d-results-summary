@@ -22,7 +22,7 @@ def construct_csv(
     output_file_path_no_extension: str,
     round_decimals: bool = False,
 ):
-    log.info("Calling construct_csv")
+    log.debug("Calling construct_csv")
 
     preserve_order = [
         "node_id",
@@ -62,7 +62,7 @@ def construct_formatted_csv(
     data: List[Dict[str, any]],
     output_file_path_no_extension: str,
 ):
-    log.info("Calling construct_formatted_csv")
+    log.debug("Calling construct_formatted_csv")
 
     parameters_to_include = [
         "x",
