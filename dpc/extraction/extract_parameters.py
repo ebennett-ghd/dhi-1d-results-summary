@@ -11,6 +11,7 @@ Created on 2021-10-27
 """
 
 import mikeio1d
+import pandas as pd
 from mikeio1d.res1d import ResultData
 from typing import Dict, Tuple, Callable
 
@@ -19,8 +20,9 @@ from dpc.utils.logger import logger as log
 
 def get_data(
     data: ResultData,
-    include_nodes: bool,
-    include_reaches: bool,
+    df: pd.DataFrame = None,
+    include_nodes: bool = True,
+    include_reaches: bool = True,
 ) -> Tuple[Dict[str, any], str]:
     log.debug("Calling get_data")
     all_node_data = {}
@@ -29,6 +31,7 @@ def get_data(
     node_y_coordinates = get_node_coordinates(data, "y")
     node_invert_levels = get_node_invert_levels(
         data,
+        df=df,
         include_nodes=include_nodes,
         include_reaches=include_reaches,
     )
@@ -38,6 +41,7 @@ def get_data(
         max,
         include_nodes=include_nodes,
         include_reaches=include_reaches,
+        df=df,
     )
 
     node_ids = set(  # construct list of nodes
@@ -60,24 +64,47 @@ def get_projection(data: ResultData) -> str:
     return data.ProjectionString
 
 
-def get_node_coordinates(data: ResultData, coordinate: str) -> Dict[str, float]:
+def get_node_coordinates(
+    data: ResultData,
+    coordinate: str,
+    df: pd.DataFrame = None,
+) -> Dict[str, float]:
     log.debug("Calling get_node_coordinates")
     coordinates = {}
     nodes = list(data.Nodes)
-    for node in nodes:
-        coord = None
-        if coordinate == "x":
-            coord = node.get_XCoordinate()
-        elif coordinate == "y":
-            coord = node.get_YCoordinate()
-        else:
-            log.critical(f"Spatial coordinate not property specified. Got: {coordinate}")
-        coordinates[node.Id] = coord
+    if df is None:
+        log.debug(f"Attempting to take data direct from data structure")
+        for node in nodes:
+            coord = None
+            if coordinate == "x":
+                coord = node.get_XCoordinate()
+            elif coordinate == "y":
+                coord = node.get_YCoordinate()
+            else:
+                log.error(f"Spatial coordinate not property specified. Got: {coordinate}")
+            coordinates[node.Id] = coord
+    else:
+        log.debug(f"Attempting to take data from relevant reach via DataFrame")
+        relevant_columns = [col for col in df.columns if "Water Level" in col or "WaterLevel" in col]
+        for col in relevant_columns:
+            node_id, chainage = col.split(":")[1:]
+            node = [node for node in nodes if node.Id == f"{chainage} {node_id}"]
+            if node:
+                matched_node = node[0]
+                grid_point_index = matched_node.Reaches[0].Reach.GridPointIndexForChainage(chainage)
+                if coordinate == "x":
+                    coord = list(matched_node.Reaches[0].Reach.GridPoints)[grid_point_index].get_X()
+                elif coordinate == "y":
+                    coord = list(matched_node.Reaches[0].Reach.GridPoints)[grid_point_index].get_Y()
+                else:
+                    log.error(f"Spatial coordinate not property specified. Got: {coordinate}")
+                coordinates[f"{chainage} {node_id}"] = coord
     return coordinates
 
 
 def get_node_invert_levels(
     data: ResultData,
+    df: pd.DataFrame,
     include_nodes: bool = True,
     include_reaches: bool = True,
 ) -> Dict[str, float]:
@@ -86,11 +113,20 @@ def get_node_invert_levels(
 
     if hasattr(data, "Nodes") and include_nodes:
         nodes = list(data.Nodes)
-        for node in nodes:
-            try:
+        if df is None:
+            log.debug(f"Attempting to take data direct from data structure")
+            for node in nodes:
                 invert_levels[node.Id] = node.BottomLevel
-            except:
-                log.warning(f"Bottom level data not available for node: {node.Id}")
+        else:
+            log.debug(f"Attempting to take data from relevant reach via DataFrame")
+            relevant_columns = [col for col in df.columns if "Water Level" in col or "WaterLevel" in col]
+            for col in relevant_columns:
+                node_id, chainage = col.split(":")[1:]
+                node = [node for node in nodes if node.Id == f"{chainage} {node_id}"]
+                if node:
+                    matched_node = node[0]
+                    grid_point_index = matched_node.Reaches[0].Reach.GridPointIndexForChainage(chainage)
+                    invert_levels[f"{chainage} {node_id}"] = list(matched_node.Reaches[0].Reach.GridPoints)[grid_point_index].get_Z()
 
     if hasattr(data, "Reaches") and include_reaches:
         reaches = list(data.Reaches)
@@ -114,35 +150,47 @@ def get_aggregated_water_levels(
     aggregator: Callable = None,
     include_nodes: bool = True,
     include_reaches: bool = True,
+    df: pd.DataFrame = None,
 ) -> Dict[str, any]:
     log.debug("Calling get_node_invert_levels")
     max_water_level = {}
 
-    if hasattr(data, "Nodes") and include_nodes:
-        nodes = list(data.Nodes)
-        for node in nodes:
-            node_data_sets = list(node.DataItems)
-            for node_data_set in node_data_sets:
-                if node_data_set.Quantity.Id in ["WaterLevel", "Water Level"]:
-                    data = list(node_data_set.TimeData)
-                    max_water_level[node.Id] = aggregator(data) if aggregator is not None else data
-                    break
+    if df is None:
+        log.debug("Processing ResultData directly")
+        if hasattr(data, "Nodes") and include_nodes:
+            nodes = list(data.Nodes)
+            for node in nodes:
+                node_data_sets = list(node.DataItems)
+                for node_data_set in node_data_sets:
+                    if node_data_set.Quantity.Id in ["WaterLevel", "Water Level"]:
+                        data = list(node_data_set.TimeData)
+                        max_water_level[node.Id] = aggregator(data) if aggregator is not None else data
+                        break
 
-    if hasattr(data, "Reaches") and include_reaches:
-        reaches = list(data.Reaches)
-        for reach in reaches:
-            reach_data_sets = list(reach.DataItems)
-            for reach_data_set in reach_data_sets:
-                if reach_data_set.Quantity.Id in ["WaterLevel", "Water Level"]:
-                    element_data = []
-                    for element_index in range(0, reach_data_set.NumberOfElements):
-                        time_series_data = []
-                        for x in range(0, reach_data_set.TimeData.NumberOfTimeSteps):
-                            time_series_data.append(reach_data_set.TimeData.GetValue(x, element_index))
-                        aggregated_time_series_data = aggregator(time_series_data) if aggregator is not None else time_series_data
-                        element_data.append(aggregated_time_series_data)
-                    max_water_level[reach.Id] = aggregator(element_data) if aggregator is not None else element_data
-                    break
+        if hasattr(data, "Reaches") and include_reaches:
+            reaches = list(data.Reaches)
+            for reach in reaches:
+                reach_data_sets = list(reach.DataItems)
+                for reach_data_set in reach_data_sets:
+                    if reach_data_set.Quantity.Id in ["WaterLevel", "Water Level"]:
+                        element_data = []
+                        for element_index in range(0, reach_data_set.NumberOfElements):
+                            time_series_data = []
+                            for x in range(0, reach_data_set.TimeData.NumberOfTimeSteps):
+                                time_series_data.append(reach_data_set.TimeData.GetValue(x, element_index))
+                            aggregated_time_series_data = aggregator(time_series_data) if aggregator is not None else time_series_data
+                            element_data.append(aggregated_time_series_data)
+                        max_water_level[reach.Id] = aggregator(element_data) if aggregator is not None else element_data
+                        break
+
+    else:
+        log.debug("Processing DataFrame")
+        relevant_columns = [col for col in df.columns if "Water Level" in col or "WaterLevel" in col]
+        relevant_df = df[relevant_columns]
+        for col in relevant_df.columns:
+            node_id, chainage = col.split(":")[1:]
+            water_level_time_series = df[col].to_list()
+            max_water_level[f"{chainage} {node_id}"] = max(water_level_time_series)
 
     return max_water_level
 

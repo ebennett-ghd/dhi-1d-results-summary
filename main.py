@@ -154,6 +154,8 @@ def get_input_paths(
 
 def get_all_node_data(
     file_paths: List[str],
+    include_nodes = True,
+    include_reaches = True,
 ):
     """
     gets specified node data from all files
@@ -167,28 +169,28 @@ def get_all_node_data(
         _, file_name = split(file_path)
         file_extension = file_name.split(".")[1].lower()
 
+        data, df = None, None
         if file_extension == "res11":
-            data = load_res_file(file_path)
-            # TODO: something with dataframe
-            all_data_from_file = {}
-            projection = ''
+            data, df = load_res_file(file_path)
         elif file_extension == "prf":
-            include_nodes, include_reaches = True, False
-            data = load_prf_file(file_path)
+            data, df = load_prf_file(file_path)
+
+        if data is not None:
             all_data_from_file, projection = get_data(
                 data,
+                df=df,
                 include_nodes=include_nodes,
                 include_reaches=include_reaches,
             )
 
-        for node_id, values in all_data_from_file.items():
-            node_payload = {
-                "file": file_name,
-                "projection": projection,
-                "node_id": node_id,
-            }
-            node_payload.update(values.items())
-            all_node_data.append(node_payload)
+            for node_id, values in all_data_from_file.items():
+                node_payload = {
+                    "file": file_name,
+                    "projection": projection,
+                    "node_id": node_id,
+                }
+                node_payload.update(values.items())
+                all_node_data.append(node_payload)
 
     return all_node_data
 
