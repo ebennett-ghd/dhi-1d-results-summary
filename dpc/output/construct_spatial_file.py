@@ -39,17 +39,17 @@ def construct_csv(
 
     column_names = list(set([column_name for datum in data for column_name in list(datum.keys()) if column_name not in preserve_order]))
 
+    if "file" in column_names:  # ensure file is at start
+        column_names.remove("file")
+        preserve_order = ["file"] + preserve_order
+
     if "max_of_max" in column_names:  # ensure max of max is at the end
         column_names.remove("max_of_max")
         column_names = column_names + ["max_of_max"]
 
-    if "critical_duration" in column_names:  # ensure critical duration is after max of max!
+    if "critical_duration" in column_names:  # ensure critical duration is at the end (after max of max)
         column_names.remove("critical_duration")
         column_names = column_names + ["critical_duration"]
-
-    if "file" in column_names:  # ensure max of max is at the end
-        column_names.remove("file")
-        preserve_order = ["file"] + preserve_order
 
     # takes data columns available for first item in list
 
@@ -70,6 +70,7 @@ def construct_csv(
 def construct_formatted_csv(
     data: List[Dict[str, any]],
     output_file_path_no_extension: str,
+    critical_durations: Dict[str, str] = None,
 ):
     log.debug("Calling construct_formatted_csv")
 
@@ -109,8 +110,14 @@ def construct_formatted_csv(
                         node_outputs[param] = datum[param]
                     node_parameters_set = True
                 node_outputs[unique_file] = datum["max_water_level"]
-        node_outputs["max_of_max"] = max(file_maxima) if file_maxima else None
-        node_outputs["critical_duration"] = node_outputs["max_of_max"]
+        node_outputs["max_of_max"] = None
+        node_outputs["critical_duration"] = None
+        if file_maxima:
+            max_file_maxima = max(file_maxima)
+            critical_files = [s for s in node_outputs if node_outputs[s] == max_file_maxima]
+            if critical_files:
+                node_outputs["critical_duration"] = critical_durations[critical_files[0]]
+            node_outputs["max_of_max"] = max_file_maxima
         formatted_data.append(
             node_outputs
         )

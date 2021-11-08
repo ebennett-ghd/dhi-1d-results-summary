@@ -10,16 +10,17 @@ Created on 2021-10-26
 @email: edmund.bennett@ghd.com
 """
 
-import mikeio1d
 from typing import List, Tuple, Union
 from sys import argv
 from os.path import abspath, join, split, isdir
 from os import getcwd
 from json import dump
+from datetime import datetime
 import argparse
 import getpass
+import socket
 
-from dpc.extraction.load_mike_file import load_file
+from dpc.extraction.load_mike_file import load_prf_file, load_res_file
 from dpc.extraction.extract_parameters import get_data
 from dpc.output.construct_spatial_file import (
     construct_csv,
@@ -30,11 +31,20 @@ from dpc.utils.get_files_recursively import FileManipulation
 from dpc.utils.logger import logger as log
 
 
-def parse_arguments() -> Tuple[Union[None, List[str]], Union[None, str], Union[None, str], Union[None, bool]]:
+def parse_arguments() -> Tuple[
+    Union[None, List[str]],
+    Union[None, List[str]],
+    Union[None, str],
+    Union[None, str],
+    Union[None, bool]
+]:
 
     def get_file_list(path_to_file_list):
         with open(path_to_file_list, "r") as file_list_file:
-            return file_list_file.read().split("\n")
+            files = file_list_file.read().split("\n")
+            file_paths = [" ".join(file.split(" ")[0:-1]) for file in files if file]
+            critical_durations = [file.split(" ")[-1] for file in files if file]
+            return file_paths, critical_durations
 
     parser = argparse.ArgumentParser(description='DHI data processor')
 
@@ -45,15 +55,6 @@ def parse_arguments() -> Tuple[Union[None, List[str]], Union[None, str], Union[N
         help='path of csv file containing list of files to process',
         default=None,
         dest="path_to_file_list",
-    )
-
-    parser.add_argument(
-        "-i",
-        "--input-directory",
-        type=str,
-        help='directory of files to process',
-        default=None,
-        dest="input_directory",
     )
 
     parser.add_argument(
@@ -75,9 +76,18 @@ def parse_arguments() -> Tuple[Union[None, List[str]], Union[None, str], Union[N
     )
 
     parser.add_argument(
+        "-i",
+        "--input-directory",
+        type=str,
+        help='directory of files from which to generate file list',
+        default=None,
+        dest="input_directory",
+    )
+
+    parser.add_argument(
         "-s",
         "--subdir",
-        help='search within subdirectories for input data i.e. true',
+        help='search within subdirectories for input data i.e. true - used with --input-directory to generate list of files to process',
         default=False,
         action="store_true",
     )
@@ -94,7 +104,7 @@ def parse_arguments() -> Tuple[Union[None, List[str]], Union[None, str], Union[N
 
     try:
         if parsed_args.path_to_file_list is not None:
-            file_paths = get_file_list(parsed_args.path_to_file_list)
+            file_paths, critical_durations = get_file_list(parsed_args.path_to_file_list)
         else:
             input_directory = abspath(parsed_args.input_directory)
             if isdir(input_directory):
@@ -115,10 +125,15 @@ def parse_arguments() -> Tuple[Union[None, List[str]], Union[None, str], Union[N
         if parsed_args.from_crs is not None:
             from_crs = parsed_args.from_crs
 
-        return file_paths, output_directory, from_crs, parsed_args.no_round_outputs
+        if parsed_args.path_to_file_list is None:
+            with open(join(output_directory, "input_files.txt"), "w") as inputs_file:
+                inputs_file.writelines([file_path + "\n" for file_path in file_paths])
+                quit()
+
+        return file_paths, critical_durations, output_directory, from_crs, parsed_args.no_round_outputs
     except Exception as e:
         log.critical(f"Input arguments are not valid. Error: {e}")
-        return None, None, None, None
+        return None, None, None, None, None
 
 
 def get_input_paths(
@@ -137,28 +152,35 @@ def get_input_paths(
     )
 
 
-def get_all_node_data(file_paths):
+def get_all_node_data(
+    file_paths: List[str],
+):
     """
     gets specified node data from all files
     :param file_paths: list of paths to files to include in processing - each of these files are assumed to be loadable using mikio1d
-    :return:
+    :param critical_durations: list of critical durations to include in processing - ordered list expected in the same order as files
+    :return: node data
     """
     all_node_data = []
     for file_path in file_paths:
         log.debug(f"Loading file: {file_path}")
         _, file_name = split(file_path)
         file_extension = file_name.split(".")[1].lower()
-        data = load_file(file_path)
 
-        include_nodes, include_reaches = True, False
         if file_extension == "res11":
-            include_nodes, include_reaches = False, True
+            data = load_res_file(file_path)
+            # TODO: something with dataframe
+            all_data_from_file = {}
+            projection = ''
+        elif file_extension == "prf":
+            include_nodes, include_reaches = True, False
+            data = load_prf_file(file_path)
+            all_data_from_file, projection = get_data(
+                data,
+                include_nodes=include_nodes,
+                include_reaches=include_reaches,
+            )
 
-        all_data_from_file, projection = get_data(
-            data,
-            include_nodes=include_nodes,
-            include_reaches=include_reaches,
-        )
         for node_id, values in all_data_from_file.items():
             node_payload = {
                 "file": file_name,
@@ -179,11 +201,32 @@ def main(argv):
     arguments = " ".join(argv)
     log.info(f"User: {current_user} calling script with inputs: {arguments}")
 
-    file_paths, output_directory, from_crs, no_round_outputs = parse_arguments()
+    (
+        file_paths,
+        critical_durations,
+        output_directory,
+        from_crs,
+        no_round_outputs,
+     ) = parse_arguments()
+
+    log_payload = {
+        "user": current_user,
+        "machine_id": socket.gethostname(),
+        "utc_timestamp": str(datetime.utcnow()),
+        "command": arguments,
+        "input_files": file_paths,
+    }
+    with open(join(output_directory, "run.log"), "w") as log_file:
+        dump(log_payload, log_file, indent=4)
 
     if file_paths is None:
         log.critical("Check input arguments")
         return
+
+    critical_duration_dict = {}
+    for file, duration in zip(file_paths, critical_durations):
+        file_path, file_name = split(file)
+        critical_duration_dict[file_name] = duration
 
     # get all data
 
@@ -192,14 +235,15 @@ def main(argv):
     # construct output files
 
     construct_csv(
-        all_node_data,
-        join(abspath(output_directory), "node_data"),
+        data=all_node_data,
+        output_file_path_no_extension=join(abspath(output_directory), "node_data"),
         round_decimals=not no_round_outputs,
     )
 
     construct_formatted_csv(
-        all_node_data,
-        join(abspath(output_directory), "formatted_node_data"),
+        data=all_node_data,
+        output_file_path_no_extension=join(abspath(output_directory), "formatted_node_data"),
+        critical_durations=critical_duration_dict,
     )
 
     if from_crs is not None:
@@ -208,10 +252,8 @@ def main(argv):
             nodes=all_node_data,
         )
 
-        with open("inputs/test.geojson", "w") as geo_file:
+        with open("outputs/test.geojson", "w") as geo_file:
             dump(all_node_geojson, geo_file)
-
-    # construct_run_log()
 
 
 if __name__ == "__main__":
