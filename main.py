@@ -110,6 +110,8 @@ def parse_arguments() -> Tuple[
 
     parsed_args = parser.parse_args()
 
+    critical_durations = None
+
     try:
         if parsed_args.path_to_file_list is not None:
             file_paths, critical_durations = get_file_list(parsed_args.path_to_file_list)
@@ -225,6 +227,7 @@ def main(argv):
         "utc_timestamp": str(datetime.utcnow()),
         "command": arguments,
         "input_files": file_paths,
+        "critical_durations": critical_durations,
     }
     with open(join(output_directory, "run.log"), "w") as log_file:
         dump(log_payload, log_file, indent=4)
@@ -232,6 +235,9 @@ def main(argv):
     if file_paths is None:
         log.critical("Check input arguments")
         return
+
+    if critical_durations is None:
+        critical_durations = [None for _ in range(len(file_paths))]
 
     critical_duration_dict = {}
     for file, duration in zip(file_paths, critical_durations):
