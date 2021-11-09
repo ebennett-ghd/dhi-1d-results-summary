@@ -93,6 +93,14 @@ def parse_arguments() -> Tuple[
     )
 
     parser.add_argument(
+        "-l",
+        "--create-file-list",
+        help='create a list of files to be processed',
+        default=False,
+        action="store_true",
+    )
+
+    parser.add_argument(
         "-r",
         "--no-round-outputs",
         help='do not round decimal outputs to three decimal places',
@@ -125,7 +133,7 @@ def parse_arguments() -> Tuple[
         if parsed_args.from_crs is not None:
             from_crs = parsed_args.from_crs
 
-        if parsed_args.path_to_file_list is None:
+        if parsed_args.path_to_file_list is None and parsed_args.create_file_list:
             with open(join(output_directory, "input_files.txt"), "w") as inputs_file:
                 inputs_file.writelines([file_path + "\n" for file_path in file_paths])
                 quit()
