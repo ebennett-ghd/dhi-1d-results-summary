@@ -33,7 +33,7 @@ from dpc.utils.logger import logger as log
 
 def parse_arguments() -> Tuple[
     Union[None, List[str]],
-    Union[None, List[str]],
+    Union[None, List[Union[None, str]]],
     Union[None, str],
     Union[None, str],
     Union[None, bool]
@@ -42,8 +42,20 @@ def parse_arguments() -> Tuple[
     def get_file_list(path_to_file_list):
         with open(path_to_file_list, "r") as file_list_file:
             files = file_list_file.read().split("\n")
-            file_paths = [" ".join(file.split(" ")[0:-1]) for file in files if file]
-            critical_durations = [file.split(" ")[-1] for file in files if file]
+            ends_of_line = [file.split(".")[-1] for file in files if file]
+            critical_durations = []
+            for end_of_line in ends_of_line:
+                if " " in end_of_line:
+                    critical_durations.append(end_of_line.split(" ")[-1])
+                else:
+                    critical_durations.append(None)
+
+            file_paths = []
+            for file in files:
+                if " " in file:
+                    file_paths.append(" ".join(file.split(" ")[0:-1]))
+                else:
+                    file_paths.append(file)
             return file_paths, critical_durations
 
     parser = argparse.ArgumentParser(description='DHI data processor')
@@ -175,32 +187,34 @@ def get_all_node_data(
     """
     all_node_data = []
     for file_path in file_paths:
-        log.debug(f"Loading file: {file_path}")
-        _, file_name = split(file_path)
-        file_extension = file_name.split(".")[1].lower()
+        if file_path:
+            log.debug(f"Loading file: {file_path}")
+            _, file_name = split(file_path)
+            split_row = file_name.split(".")
+            file_extension = split_row[1].lower()
 
-        data, df = None, None
-        if file_extension == "res11":
-            data, df = load_res_file(file_path)
-        elif file_extension == "prf":
-            data, df = load_prf_file(file_path)
+            data, df = None, None
+            if file_extension == "res11":
+                data, df = load_res_file(file_path)
+            elif file_extension == "prf":
+                data, df = load_prf_file(file_path)
 
-        if data is not None:
-            all_data_from_file, projection = get_data(
-                data,
-                df=df,
-                include_nodes=include_nodes,
-                include_reaches=include_reaches,
-            )
+            if data is not None:
+                all_data_from_file, projection = get_data(
+                    data,
+                    df=df,
+                    include_nodes=include_nodes,
+                    include_reaches=include_reaches,
+                )
 
-            for node_id, values in all_data_from_file.items():
-                node_payload = {
-                    "file": file_name,
-                    "projection": projection,
-                    "node_id": node_id,
-                }
-                node_payload.update(values.items())
-                all_node_data.append(node_payload)
+                for node_id, values in all_data_from_file.items():
+                    node_payload = {
+                        "file": file_name,
+                        "projection": projection,
+                        "node_id": node_id,
+                    }
+                    node_payload.update(values.items())
+                    all_node_data.append(node_payload)
 
     return all_node_data
 

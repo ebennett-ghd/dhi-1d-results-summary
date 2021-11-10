@@ -1,6 +1,6 @@
-C:\Users\ebennett2\SoftwareProjects\Dhi1DResultSummary\inputs\V03_SUMN_PostEQ_ED2014_00p5AEP_00p5hr.PRF
-C:\Users\ebennett2\SoftwareProjects\Dhi1DResultSummary\inputs\V03_SUMN_PostEQ_ED2014_00p5AEP_00p5hr.res11
-C:\Users\ebennett2\SoftwareProjects\Dhi1DResultSummary\inputs\V03_SUMN_PostEQ_ED2014_00p5AEP_02hr.res11
+C:\Users\ebennett2\SoftwareProjects\Dhi1DResultSummary\inputs\V03_SUMN_PostEQ_ED2014_00p5AEP_00p5hr.PRF 1
+C:\Users\ebennett2\SoftwareProjects\Dhi1DResultSummary\inputs\V03_SUMN_PostEQ_ED2014_00p5AEP_00p5hr.res11 2
+C:\Users\ebennett2\SoftwareProjects\Dhi1DResultSummary\inputs\V03_SUMN_PostEQ_ED2014_00p5AEP_02hr.res11 3
 C:\Users\ebennett2\SoftwareProjects\Dhi1DResultSummary\inputs\V03_SUMN_PostEQ_ED2014_00p5AEP_03hr.PRF
 C:\Users\ebennett2\SoftwareProjects\Dhi1DResultSummary\inputs\V03_SUMN_PostEQ_ED2014_00p5AEP_03hr.res11
 C:\Users\ebennett2\SoftwareProjects\Dhi1DResultSummary\inputs\V03_SUMN_PostEQ_ED2014_00p5AEP_06hr.PRF
