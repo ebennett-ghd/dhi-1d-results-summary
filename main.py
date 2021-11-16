@@ -177,7 +177,7 @@ def get_input_paths(
 def get_all_node_data(
     file_paths: List[str],
     include_nodes = True,
-    include_reaches = True,
+    include_reaches = False,
 ):
     """
     gets specified node data from all files
@@ -196,6 +196,7 @@ def get_all_node_data(
             data, df = None, None
             if file_extension == "res11":
                 data, df = load_res_file(file_path)
+                include_nodes, include_reaches = False, True
             elif file_extension == "prf":
                 data, df = load_prf_file(file_path)
 

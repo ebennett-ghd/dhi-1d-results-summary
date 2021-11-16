@@ -10,7 +10,6 @@ Created on 2021-10-27
 @email: edmund.bennett@ghd.com
 """
 
-import mikeio1d
 import pandas as pd
 from mikeio1d.res1d import ResultData
 from typing import Dict, Tuple, Callable
@@ -27,8 +26,18 @@ def get_data(
     log.debug("Calling get_data")
     all_node_data = {}
 
-    node_x_coordinates = get_node_coordinates(data, "x")
-    node_y_coordinates = get_node_coordinates(data, "y")
+    node_x_coordinates = get_node_coordinates(
+        data,
+        "x",
+        include_nodes=include_nodes,
+        include_reaches=include_reaches,
+    )
+    node_y_coordinates = get_node_coordinates(
+        data,
+        "y",
+        include_nodes=include_nodes,
+        include_reaches=include_reaches,
+    )
     node_invert_levels = get_node_invert_levels(
         data,
         df=df,
@@ -68,37 +77,68 @@ def get_node_coordinates(
     data: ResultData,
     coordinate: str,
     df: pd.DataFrame = None,
+    include_nodes: bool = True,
+    include_reaches: bool = True,
 ) -> Dict[str, float]:
     log.debug("Calling get_node_coordinates")
     coordinates = {}
-    nodes = list(data.Nodes)
-    if df is None:
-        log.debug(f"Attempting to take data direct from data structure")
-        for node in nodes:
-            coord = None
-            if coordinate == "x":
-                coord = node.get_XCoordinate()
-            elif coordinate == "y":
-                coord = node.get_YCoordinate()
-            else:
-                log.error(f"Spatial coordinate not property specified. Got: {coordinate}")
-            coordinates[node.Id] = coord
-    else:
-        log.debug(f"Attempting to take data from relevant reach via DataFrame")
-        relevant_columns = [col for col in df.columns if "Water Level" in col or "WaterLevel" in col]
-        for col in relevant_columns:
-            node_id, chainage = col.split(":")[1:]
-            node = [node for node in nodes if node.Id == f"{chainage} {node_id}"]
-            if node:
-                matched_node = node[0]
-                grid_point_index = matched_node.Reaches[0].Reach.GridPointIndexForChainage(chainage)
+
+    if hasattr(data, "Nodes") and include_nodes:
+        nodes = list(data.Nodes)
+        if df is None:
+            log.debug(f"Attempting to take data direct from data structure")
+            for node in nodes:
+                coord = None
                 if coordinate == "x":
-                    coord = list(matched_node.Reaches[0].Reach.GridPoints)[grid_point_index].get_X()
+                    coord = node.get_XCoordinate()
                 elif coordinate == "y":
-                    coord = list(matched_node.Reaches[0].Reach.GridPoints)[grid_point_index].get_Y()
+                    coord = node.get_YCoordinate()
                 else:
                     log.error(f"Spatial coordinate not property specified. Got: {coordinate}")
-                coordinates[f"{chainage} {node_id}"] = coord
+                coordinates[node.Id] = coord
+        else:
+            log.debug(f"Attempting to take data from relevant reach via DataFrame")
+            relevant_columns = [col for col in df.columns if "Water Level" in col or "WaterLevel" in col]
+            for col in relevant_columns:
+                node_id, chainage = col.split(":")[1:]
+                node = [node for node in nodes if node.Id == f"{chainage} {node_id}"]
+                if node:
+                    matched_node = node[0]
+                    grid_point_index = matched_node.Reaches[0].Reach.GridPointIndexForChainage(chainage)
+                    coord = None
+                    if coordinate == "x":
+                        coord = list(matched_node.Reaches[0].Reach.GridPoints)[grid_point_index].get_X()
+                    elif coordinate == "y":
+                        coord = list(matched_node.Reaches[0].Reach.GridPoints)[grid_point_index].get_Y()
+                    else:
+                        log.error(f"Spatial coordinate not property specified. Got: {coordinate}")
+                    chainage = round(chainage, 1) if "." in str(chainage) else f"{chainage}.0"
+                    coordinates[f"{node_id} {chainage}"] = coord
+
+    if hasattr(data, "Reaches") and include_reaches:
+        reaches = list(data.Reaches)
+        for reach in reaches:
+            try:
+                reach_id = reach.Id
+                if "-" in reach_id:
+                    reach_id = reach_id.split("-")[0]
+                grid_points = list(reach.GridPoints)
+                if grid_points:
+                    for grid_point in grid_points:
+                        if grid_point.get_PointType() in [2, 1025]:  # h-point is 1025, interpolated h-point is 2
+                            chainage = grid_point.get_Chainage()
+                            log.debug(f"get_node_coordinates - Reach: {reach_id} chainage: {grid_point.get_Chainage()} has point type: {grid_point.get_PointType()}")
+                            chainage = round(chainage, 1) if "." in str(chainage) else f"{chainage}.0"
+                            full_grid_point_id = f"{reach_id} {chainage}"
+                            result = None
+                            if coordinate == "x":
+                                result = grid_point.X
+                            elif coordinate == "y":
+                                result = grid_point.Y
+                            coordinates[full_grid_point_id] = result
+            except:
+                log.warning(f"Bottom level data not available for reach: {reach.Id}")
+
     return coordinates
 
 
@@ -122,23 +162,29 @@ def get_node_invert_levels(
             relevant_columns = [col for col in df.columns if "Water Level" in col or "WaterLevel" in col]
             for col in relevant_columns:
                 node_id, chainage = col.split(":")[1:]
-                node = [node for node in nodes if node.Id == f"{chainage} {node_id}"]
+                node = [node for node in nodes if node.Id == f"{node_id} {round(chainage, 0)}"]
                 if node:
                     matched_node = node[0]
                     grid_point_index = matched_node.Reaches[0].Reach.GridPointIndexForChainage(chainage)
-                    invert_levels[f"{chainage} {node_id}"] = list(matched_node.Reaches[0].Reach.GridPoints)[grid_point_index].get_Z()
+                    chainage = round(chainage, 1) if "." in str(chainage) else f"{chainage}.0"
+                    invert_levels[f"{node_id} {chainage}"] = list(matched_node.Reaches[0].Reach.GridPoints)[grid_point_index].get_Z()
 
     if hasattr(data, "Reaches") and include_reaches:
         reaches = list(data.Reaches)
-        zs = []
         for reach in reaches:
             try:
+                reach_id = reach.Id
+                if "-" in reach_id:
+                    reach_id = reach_id.split("-")[0]
                 grid_points = list(reach.GridPoints)
                 if grid_points:
-                    reach_grid_point = list(reach.GridPoints)[0]
-                    invert_levels[reach.Id] = reach_grid_point.Z
-                    zs.append(reach_grid_point.Z)
-                    break
+                    for grid_point in grid_points:
+                        log.debug(f"get_node_invert_levels - Reach: {reach_id} chainage: {grid_point.get_Chainage()} has point type: {grid_point.get_PointType()}")
+                        if grid_point.get_PointType() in [2, 1025]:  # h-point is 1025, interpolated h-point is 2
+                            chainage = grid_point.get_Chainage()
+                            chainage = round(chainage, 1) if "." in str(chainage) else f"{chainage}.0"
+                            full_grid_point_id = f"{reach_id} {chainage}"
+                            invert_levels[full_grid_point_id] = grid_point.Z
             except:
                 log.warning(f"Bottom level data not available for reach: {reach.Id}")
 
@@ -190,7 +236,8 @@ def get_aggregated_water_levels(
         for col in relevant_df.columns:
             node_id, chainage = col.split(":")[1:]
             water_level_time_series = df[col].to_list()
-            max_water_level[f"{chainage} {node_id}"] = max(water_level_time_series)
+            chainage = round(float(chainage), 1) if "." in str(chainage) else f"{chainage}.0"
+            max_water_level[f"{node_id} {chainage}"] = max(water_level_time_series)
 
     return max_water_level
 
