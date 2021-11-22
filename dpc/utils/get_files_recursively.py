@@ -43,21 +43,21 @@ class FileManipulation:
                         if name[:2] != FileManipulation.FILE_BACKUP:
                             if filename_regex is None:
                                 if file_extension_allow_list is None:
-                                    if (exclude_filename_text is None) or (exclude_filename_text is not None) and (exclude_filename_text not in name):
+                                    if (exclude_filename_text is None) or (exclude_filename_text is not None) and (exclude_filename_text.lower() not in name.lower()):
                                         file_paths.append(join(root, name))
                                 else:
                                     if name.split('.')[-1].lower() in file_extension_allow_list:
-                                        if (exclude_filename_text is None) or (exclude_filename_text is not None) and (exclude_filename_text not in name):
+                                        if (exclude_filename_text is None) or (exclude_filename_text is not None) and (exclude_filename_text.lower() not in name.lower()):
                                             file_paths.append(join(root, name))
                             else:
                                 search = re.search(filename_regex, name)
                                 if search is not None:
                                     if file_extension_allow_list is None:
-                                        if (exclude_filename_text is None) or ((exclude_filename_text is not None) and (exclude_filename_text not in name)):
+                                        if (exclude_filename_text is None) or ((exclude_filename_text is not None) and (exclude_filename_text.lower() not in name.lower())):
                                             file_paths.append(join(root, name))
                                     else:
                                         if name.split('.')[-1].lower() in file_extension_allow_list:
-                                            if (exclude_filename_text is None) or ((exclude_filename_text is not None) and (exclude_filename_text not in name)):
+                                            if (exclude_filename_text is None) or ((exclude_filename_text is not None) and (exclude_filename_text.lower() not in name.lower())):
                                                 file_paths.append(join(root, name))
 
         return file_paths

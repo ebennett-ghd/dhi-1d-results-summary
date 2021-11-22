@@ -25,12 +25,14 @@ def construct_run_log():
 def construct_csv(
     data: List[Dict[str, any]],
     output_file_path_no_extension: str,
+    ordered_data_files: List[str] = None,
     round_decimals: bool = False,
 ):
     log.debug("Calling construct_csv")
 
     preserve_order = [
         "node_id",
+        "file_type",
         "projection",
         "x",
         "y",
@@ -38,22 +40,31 @@ def construct_csv(
     ]
 
     column_names = list(set([column_name for datum in data for column_name in list(datum.keys()) if column_name not in preserve_order]))
+    ordered_column_names = []
 
     if "file" in column_names:  # ensure file is at start
         column_names.remove("file")
         preserve_order = ["file"] + preserve_order
 
-    if "max_of_max" in column_names:  # ensure max of max is at the end
-        column_names.remove("max_of_max")
-        column_names = column_names + ["max_of_max"]
+    for data_file in ordered_data_files:
+        if data_file in column_names:
+            ordered_column_names.append(data_file)
 
-    if "critical_duration" in column_names:  # ensure critical duration is at the end (after max of max)
+    if "max_of_max" in column_names:  # ensure max of max is almost at the end
+        column_names.remove("max_of_max")
+        ordered_column_names.append("max_of_max")
+
+    if "max_depth" in column_names:  # ensure depth is at the end (after max of max)
+        column_names.remove("max_depth")
+        ordered_column_names.append("max_depth")
+
+    if "critical_duration" in column_names:  # ensure critical duration is at the end (after max_depth)
         column_names.remove("critical_duration")
-        column_names = column_names + ["critical_duration"]
+        ordered_column_names.append("critical_duration")
 
     # takes data columns available for first item in list
 
-    all_column_names = preserve_order + column_names
+    all_column_names = preserve_order + ordered_column_names
 
     if round_decimals:
         for datum in data:
@@ -71,6 +82,8 @@ def construct_formatted_csv(
     data: List[Dict[str, any]],
     output_file_path_no_extension: str,
     critical_durations: Dict[str, str] = None,
+    ordered_data_files: List[str] = None,
+    round_decimals: bool = False,
 ):
     log.debug("Calling construct_formatted_csv")
 
@@ -89,10 +102,6 @@ def construct_formatted_csv(
 
     unique_nodes = list(set([datum["node_id"] for datum in data]))
 
-    # get unique list of files (to be used as column headers)
-
-    unique_files = list(set([datum["file"] for datum in data]))
-
     formatted_data = []
     for unique_node in unique_nodes:
         node_parameters_set = False
@@ -100,7 +109,7 @@ def construct_formatted_csv(
         node_outputs = {
             "node_id": unique_node,
         }
-        for i, unique_file in enumerate(unique_files):
+        for i, unique_file in enumerate(ordered_data_files):
             datum = seek_data(unique_node, unique_file)
             if datum is not None and datum["max_water_level"] is not None:
                 file_maxima.append(datum["max_water_level"])
@@ -110,14 +119,17 @@ def construct_formatted_csv(
                         node_outputs[param] = datum[param]
                     node_parameters_set = True
                 node_outputs[unique_file] = datum["max_water_level"]
+                node_outputs["file_type"] = datum["file_type"]
         node_outputs["max_of_max"] = None
         node_outputs["critical_duration"] = None
         if file_maxima:
             max_file_maxima = max(file_maxima)
+            max_depth = max_file_maxima - node_outputs["invert_level"]
             critical_files = [s for s in node_outputs if node_outputs[s] == max_file_maxima]
             if critical_files:
                 node_outputs["critical_duration"] = critical_durations[critical_files[0]]
             node_outputs["max_of_max"] = max_file_maxima
+            node_outputs["max_depth"] = max_depth
         formatted_data.append(
             node_outputs
         )
@@ -125,6 +137,8 @@ def construct_formatted_csv(
     construct_csv(
         formatted_data,
         output_file_path_no_extension,
+        ordered_data_files=ordered_data_files,
+        round_decimals=round_decimals,
     )
 
 
@@ -167,11 +181,6 @@ def construct_geojson(from_crs: str, nodes: List[Dict[str, any]]) -> Dict[str, a
         )
 
     return geojson
-
-
-def convert_geojson_to_shp(geojson: Dict[str, any]):
-    log.info("Calling convert_geojson_to_shp")
-    return None
 
 
 if __name__ == "__main__":

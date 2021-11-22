@@ -19,16 +19,19 @@ from datetime import datetime
 import argparse
 import getpass
 import socket
+import warnings
 
 from dpc.extraction.load_mike_file import load_prf_file, load_res_file
 from dpc.extraction.extract_parameters import get_data
 from dpc.output.construct_spatial_file import (
-    construct_csv,
     construct_formatted_csv,
     construct_geojson,
 )
 from dpc.utils.get_files_recursively import FileManipulation
 from dpc.utils.logger import logger as log
+
+
+warnings.filterwarnings("ignore")
 
 
 def parse_arguments() -> Tuple[
@@ -42,7 +45,7 @@ def parse_arguments() -> Tuple[
     def get_file_list(path_to_file_list):
         with open(path_to_file_list, "r") as file_list_file:
             files = file_list_file.read().split("\n")
-            ends_of_line = [file.split(".")[-1] for file in files if file]
+            ends_of_line = [file.split(".")[-1].strip() for file in files if file]
             critical_durations = []
             for end_of_line in ends_of_line:
                 if " " in end_of_line:
@@ -116,12 +119,11 @@ def parse_arguments() -> Tuple[
         "-r",
         "--no-round-outputs",
         help='do not round decimal outputs to three decimal places',
-        default=True,
-        action="store_false",
+        default=False,
+        action="store_true",
     )
 
     parsed_args = parser.parse_args()
-
     critical_durations = None
 
     try:
@@ -170,6 +172,7 @@ def get_input_paths(
     return FileManipulation.get_files_recursively(
         directory=input_directory,
         file_extension_allow_list=["prf", "res11"],
+        exclude_filename_text="HDADD",
         include_subdirectories=include_subdirs,
     )
 
@@ -211,6 +214,7 @@ def get_all_node_data(
                 for node_id, values in all_data_from_file.items():
                     node_payload = {
                         "file": file_name,
+                        "file_type": file_extension,
                         "projection": projection,
                         "node_id": node_id,
                     }
@@ -265,16 +269,18 @@ def main(argv):
 
     # construct output files
 
-    construct_csv(
-        data=all_node_data,
-        output_file_path_no_extension=join(abspath(output_directory), "node_data"),
-        round_decimals=not no_round_outputs,
-    )
+    # construct_csv(  # uncomment this to produce an un-formatted output
+    #     data=all_node_data,
+    #     output_file_path_no_extension=join(abspath(output_directory), "node_data"),
+    #     round_decimals=not no_round_outputs,
+    # )
 
     construct_formatted_csv(
         data=all_node_data,
         output_file_path_no_extension=join(abspath(output_directory), "formatted_node_data"),
         critical_durations=critical_duration_dict,
+        ordered_data_files=[split(e)[-1] for e in file_paths],
+        round_decimals=not no_round_outputs,
     )
 
     if from_crs is not None:
