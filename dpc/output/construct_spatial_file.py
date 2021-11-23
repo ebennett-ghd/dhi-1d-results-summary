@@ -72,7 +72,7 @@ def construct_csv(
                 if isinstance(v, float):
                     datum[k] = round(v, 3)
 
-    with open(output_file_path_no_extension + ".csv", "w", newline="") as csv_file:
+    with open(output_file_path_no_extension, "w", newline="") as csv_file:
         writer = DictWriter(csv_file, fieldnames=all_column_names)
         writer.writeheader()
         writer.writerows(data)

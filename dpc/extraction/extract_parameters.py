@@ -24,7 +24,12 @@ def get_data(
     include_reaches: bool = True,
 ) -> Tuple[Dict[str, any], str]:
     log.debug("Calling get_data")
+
+    chainage_tolerance = 0.1  # metres
+
     all_node_data = {}
+
+    projection = get_projection(data)
 
     node_x_coordinates = get_node_coordinates(
         data,
@@ -44,7 +49,6 @@ def get_data(
         include_nodes=include_nodes,
         include_reaches=include_reaches,
     )
-    projection = get_projection(data)
     max_water_levels = get_aggregated_water_levels(
         data,
         max,
@@ -198,7 +202,7 @@ def get_aggregated_water_levels(
     include_reaches: bool = True,
     df: pd.DataFrame = None,
 ) -> Dict[str, any]:
-    log.debug("Calling get_node_invert_levels")
+    log.debug("Calling get_aggregated_water_levels")
     max_water_level = {}
 
     if df is None:
@@ -236,7 +240,13 @@ def get_aggregated_water_levels(
         for col in relevant_df.columns:
             node_id, chainage = col.split(":")[1:]
             water_level_time_series = df[col].to_list()
-            chainage = round(float(chainage), 1) if "." in str(chainage) else f"{chainage}.0"
+            if "." in str(chainage):
+                if chainage[-1] == "5":  # addresses python incorrect rounding cases
+                    chainage = round(float(chainage) + 0.01, 1)
+                else:
+                    chainage = round(float(chainage), 1)
+            else:
+                chainage = f"{chainage}.0"
             max_water_level[f"{node_id} {chainage}"] = max(water_level_time_series)
 
     return max_water_level
