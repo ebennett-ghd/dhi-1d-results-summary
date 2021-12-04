@@ -12,14 +12,51 @@ Created on 2021-10-27
 
 from typing import List, Dict
 from csv import DictWriter
-from pyproj import Proj, transform
+from pyproj import Proj
 
+from dpc.analysis.convert_coordinate import convert_coordinate
 from dpc.utils.logger import logger as log
 
 
-def construct_run_log():
-    log.debug("Calling construct_run_log")
+def construct_log(
+    full_file_path: str,
+    description: str,
+    license: str,
+    user: str,
+    machine_id: str,
+    utc_timestamp: str,
+    input_command: str,
+    input_files: List[str] = None,
+    critical_durations: List[str] = None,
+    output_files: List[str] = None,
+) -> None:
+    log.debug("Calling construct_log")
+    with open(full_file_path, "w") as log_file:
+        log_file.write("description: " + description)
+        log_file.write("\n")
+        log_file.write(f"license: {license}\n")
+        log_file.write(f"user: {user}\n")
+        log_file.write(f"machine_id: {machine_id}\n")
+        log_file.write(f"utc_timestamp: {utc_timestamp}\n")
+        log_file.write(f"command: {input_command}\n")
 
+        if input_files is not None:
+            log_file.write("\n")
+            log_file.write("input_files:\n")
+            log_file.write("\n")
+            [log_file.write(f"{input_file}\n") for input_file in input_files]
+
+        if critical_durations is not None:
+            log_file.write("\n")
+            log_file.write("critical_durations:\n")
+            log_file.write("\n")
+            [log_file.write(f"{critical_duration}\n") for critical_duration in critical_durations]
+
+        if output_files is not None:
+            log_file.write("\n")
+            log_file.write("output_files:\n")
+            log_file.write("\n")
+            [log_file.write(f"{output_file}\n") for output_file in output_files]
 
 
 def construct_csv(
@@ -27,7 +64,7 @@ def construct_csv(
     output_file_path_no_extension: str,
     ordered_data_files: List[str] = None,
     round_decimals: bool = False,
-):
+) -> None:
     log.debug("Calling construct_csv")
 
     preserve_order = [
@@ -50,15 +87,15 @@ def construct_csv(
         if data_file in column_names:
             ordered_column_names.append(data_file)
 
-    if "max_of_max" in column_names:  # ensure max of max is almost at the end
-        column_names.remove("max_of_max")
-        ordered_column_names.append("max_of_max")
+    if "max_of_max_level" in column_names:  # ensure max of max is almost at the end
+        column_names.remove("max_of_max_level")
+        ordered_column_names.append("max_of_max_level")
 
-    if "max_depth" in column_names:  # ensure depth is at the end (after max of max)
-        column_names.remove("max_depth")
-        ordered_column_names.append("max_depth")
+    if "max_of_max_depth" in column_names:  # ensure depth is at the end (after max of max)
+        column_names.remove("max_of_max_depth")
+        ordered_column_names.append("max_of_max_depth")
 
-    if "critical_duration" in column_names:  # ensure critical duration is at the end (after max_depth)
+    if "critical_duration" in column_names:  # ensure critical duration is at the end (after max_of_max_depth)
         column_names.remove("critical_duration")
         ordered_column_names.append("critical_duration")
 
@@ -84,7 +121,7 @@ def construct_formatted_csv(
     critical_durations: Dict[str, str] = None,
     ordered_data_files: List[str] = None,
     round_decimals: bool = False,
-):
+) -> None:
     log.debug("Calling construct_formatted_csv")
 
     parameters_to_include = [
@@ -120,16 +157,16 @@ def construct_formatted_csv(
                     node_parameters_set = True
                 node_outputs[unique_file] = datum["max_water_level"]
                 node_outputs["file_type"] = datum["file_type"]
-        node_outputs["max_of_max"] = None
+        node_outputs["max_of_max_level"] = None
         node_outputs["critical_duration"] = None
         if file_maxima:
             max_file_maxima = max(file_maxima)
-            max_depth = max_file_maxima - node_outputs["invert_level"]
+            max_of_max_depth = max_file_maxima - node_outputs["invert_level"]
             critical_files = [s for s in node_outputs if node_outputs[s] == max_file_maxima]
             if critical_files:
                 node_outputs["critical_duration"] = critical_durations[critical_files[0]]
-            node_outputs["max_of_max"] = max_file_maxima
-            node_outputs["max_depth"] = max_depth
+            node_outputs["max_of_max_level"] = max_file_maxima
+            node_outputs["max_of_max_depth"] = max_of_max_depth
         formatted_data.append(
             node_outputs
         )
@@ -142,17 +179,10 @@ def construct_formatted_csv(
     )
 
 
-def convert_coordinate(
-    from_crs: Proj,
-    to_crs: Proj,
-    x: float,
-    y: float,
-) -> (float, float):
-    log.debug("Calling convert_coordinate")
-    return transform(from_crs, to_crs, x, y)
-
-
-def construct_geojson(from_crs: str, nodes: List[Dict[str, any]]) -> Dict[str, any]:
+def construct_geojson(
+    from_crs: str,
+    nodes: List[Dict[str, any]],
+) -> Dict[str, any]:
     log.info("Calling construct_geojson")
 
     geojson = {
@@ -160,11 +190,16 @@ def construct_geojson(from_crs: str, nodes: List[Dict[str, any]]) -> Dict[str, a
         "features": []
     }
 
-    from_crs = Proj('epsg:27200', preserve_units=False)
-    to_crs = Proj('epsg:4326', preserve_units=False)
+    from_crs_proj = Proj(from_crs, preserve_units=False)
+    to_crs_proj = Proj("epsg:4326", preserve_units=False)
 
     for node in nodes:
-        long, lat = convert_coordinate(from_crs, to_crs, node["x"], node["y"])
+        long, lat = convert_coordinate(
+            from_crs_proj,
+            to_crs_proj,
+            node["x"],
+            node["y"],
+        )
         geojson["features"].append(
             {
                 "type": "Feature",

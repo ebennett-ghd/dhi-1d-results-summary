@@ -62,11 +62,18 @@ def get_data(
     )
 
     for node_id in node_ids:
+        max_water_level = None
+        if node_id in max_water_levels.keys():
+            max_water_level = max_water_levels[node_id]
+        else:
+            pass
+            # TODO: match within a distance threshold down the reach
+
         all_node_data[node_id] = {
             "x": node_x_coordinates[node_id],
             "y": node_y_coordinates[node_id],
             "invert_level": node_invert_levels[node_id] if node_id in node_invert_levels.keys() else None,
-            "max_water_level": max_water_levels[node_id] if node_id in max_water_levels.keys() else None,
+            "max_water_level": max_water_level,
         }
 
     return all_node_data, projection
@@ -224,9 +231,9 @@ def get_aggregated_water_levels(
                 for reach_data_set in reach_data_sets:
                     if reach_data_set.Quantity.Id in ["WaterLevel", "Water Level"]:
                         element_data = []
-                        for element_index in range(0, reach_data_set.NumberOfElements):
+                        for element_index in range(reach_data_set.NumberOfElements):
                             time_series_data = []
-                            for x in range(0, reach_data_set.TimeData.NumberOfTimeSteps):
+                            for x in range(reach_data_set.TimeData.NumberOfTimeSteps):
                                 time_series_data.append(reach_data_set.TimeData.GetValue(x, element_index))
                             aggregated_time_series_data = aggregator(time_series_data) if aggregator is not None else time_series_data
                             element_data.append(aggregated_time_series_data)
