@@ -130,7 +130,6 @@ def parse_arguments() -> Tuple[
 
     parsed_args = parser.parse_args()
     critical_durations = None
-    output_filename = None
 
     try:
         if parsed_args.path_to_file_list is not None:
@@ -153,14 +152,17 @@ def parse_arguments() -> Tuple[
 
         if output_directory == getcwd():
             log.warning(f"Output directory does not exist - using current working directory")
+            output_filename = "input_files"
 
         from_crs = None
         if parsed_args.from_crs is not None:
             from_crs = parsed_args.from_crs
 
         if parsed_args.path_to_file_list is None and parsed_args.create_file_list:
-            with open(join(output_directory, "input_files.txt"), "w") as inputs_file:
-                inputs_file.writelines([file_path + "\n" for file_path in file_paths])
+            with open(join(output_directory, f"{output_filename}.txt"), "w") as inputs_file:
+                for i, file_path in enumerate(file_paths):
+                    payload = file_path + "\n" if i < len(file_paths) - 1 else file_path
+                    inputs_file.writelines(payload)
                 exit()
 
         return (
