@@ -10,7 +10,7 @@ Created on 2021-10-27
 @email: edmund.bennett@ghd.com
 """
 
-from typing import List, Dict
+from typing import List, Dict, Optional
 from csv import DictWriter
 from pyproj import Proj
 
@@ -76,7 +76,9 @@ def construct_csv(
         "invert_level",
     ]
 
-    column_names = list(set([column_name for datum in data for column_name in list(datum.keys()) if column_name not in preserve_order]))
+    column_names = list(set(
+        [column_name for datum in data for column_name in list(datum.keys()) if column_name not in preserve_order]
+    ))
     ordered_column_names = []
 
     if "file" in column_names:  # ensure file is at start
@@ -91,11 +93,11 @@ def construct_csv(
         column_names.remove("max_of_max_level")
         ordered_column_names.append("max_of_max_level")
 
-    if "max_of_max_depth" in column_names:  # ensure depth is at the end (after max of max)
+    if "max_of_max_depth" in column_names:  # ensure depth is after max of max
         column_names.remove("max_of_max_depth")
         ordered_column_names.append("max_of_max_depth")
 
-    if "critical_duration" in column_names:  # ensure critical duration is at the end (after max_of_max_depth)
+    if "critical_duration" in column_names:  # ensure critical duration is after max_of_max_depth
         column_names.remove("critical_duration")
         ordered_column_names.append("critical_duration")
 
@@ -118,9 +120,10 @@ def construct_csv(
 def construct_formatted_csv(
     data: List[Dict[str, any]],
     output_file_path_no_extension: str,
-    critical_durations: Dict[str, str] = None,
+    critical_durations: Dict[str, Optional[str]] = None,
     ordered_data_files: List[str] = None,
     round_decimals: bool = False,
+    timings: bool = False,
 ) -> None:
     log.debug("Calling construct_formatted_csv")
 
@@ -155,18 +158,20 @@ def construct_formatted_csv(
                     for param in parameters_to_include:
                         node_outputs[param] = datum[param]
                     node_parameters_set = True
-                node_outputs[unique_file] = datum["max_water_level"]
+                node_outputs[unique_file] = datum["max_water_level"] if not timings else datum["max_water_level_timing"]
                 node_outputs["file_type"] = datum["file_type"]
-        node_outputs["max_of_max_level"] = None
-        node_outputs["critical_duration"] = None
-        if file_maxima:
-            max_file_maxima = max(file_maxima)
-            max_of_max_depth = max_file_maxima - node_outputs["invert_level"]
-            critical_files = [s for s in node_outputs if node_outputs[s] == max_file_maxima]
-            if critical_files:
-                node_outputs["critical_duration"] = critical_durations[critical_files[0]]
-            node_outputs["max_of_max_level"] = max_file_maxima
-            node_outputs["max_of_max_depth"] = max_of_max_depth
+
+        if not timings:
+            node_outputs["max_of_max_level"] = None
+            node_outputs["critical_duration"] = None
+            if file_maxima:
+                max_file_maxima = max(file_maxima)
+                max_of_max_depth = max_file_maxima - node_outputs["invert_level"]
+                critical_files = [s for s in node_outputs if node_outputs[s] == max_file_maxima]
+                if critical_files:
+                    node_outputs["critical_duration"] = critical_durations[critical_files[0]]
+                node_outputs["max_of_max_level"] = max_file_maxima
+                node_outputs["max_of_max_depth"] = max_of_max_depth
         formatted_data.append(
             node_outputs
         )

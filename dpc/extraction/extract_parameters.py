@@ -25,11 +25,13 @@ def get_data(
 ) -> Tuple[Dict[str, any], str]:
     log.debug("Calling get_data")
 
-    chainage_tolerance = 0.1  # metres
-
     all_node_data = {}
 
     projection = get_projection(data)
+
+    start_time, end_time, number_of_time_steps = get_timing_data(
+        data,
+    )
 
     node_x_coordinates = get_node_coordinates(
         data,
@@ -49,7 +51,7 @@ def get_data(
         include_nodes=include_nodes,
         include_reaches=include_reaches,
     )
-    max_water_levels = get_aggregated_water_levels(
+    max_water_levels, max_water_level_timings = get_aggregated_water_levels(
         data,
         max,
         include_nodes=include_nodes,
@@ -66,14 +68,19 @@ def get_data(
         if node_id in max_water_levels.keys():
             max_water_level = max_water_levels[node_id]
         else:
-            pass
+            tolerance = 0.1
             # TODO: match within a distance threshold down the reach
+
+        max_water_level_timing = None
+        if node_id in max_water_level_timings.keys():
+            max_water_level_timing = max_water_level_timings[node_id]
 
         all_node_data[node_id] = {
             "x": node_x_coordinates[node_id],
             "y": node_y_coordinates[node_id],
             "invert_level": node_invert_levels[node_id] if node_id in node_invert_levels.keys() else None,
             "max_water_level": max_water_level,
+            "max_water_level_timing": max_water_level_timing,
         }
 
     return all_node_data, projection
@@ -82,6 +89,10 @@ def get_data(
 def get_projection(data: ResultData) -> str:
     log.debug("Calling get_projection")
     return data.ProjectionString
+
+
+def get_timing_data(data: ResultData) -> Tuple[str, str, str]:
+    return data.StartTime, data.EndTime, data.NumberOfTimeSteps
 
 
 def get_node_coordinates(
@@ -208,9 +219,10 @@ def get_aggregated_water_levels(
     include_nodes: bool = True,
     include_reaches: bool = True,
     df: pd.DataFrame = None,
-) -> Dict[str, any]:
+) -> Tuple[Dict[str, any], Dict[str, any]]:
     log.debug("Calling get_aggregated_water_levels")
     max_water_level = {}
+    max_water_level_timings = {}
 
     if df is None:
         log.debug("Processing ResultData directly")
@@ -222,6 +234,9 @@ def get_aggregated_water_levels(
                     if node_data_set.Quantity.Id in ["WaterLevel", "Water Level"]:
                         data = list(node_data_set.TimeData)
                         max_water_level[node.Id] = aggregator(data) if aggregator is not None else data
+                        max_water_level_timings[node.Id] = None
+                        if aggregator is not None:
+                            max_water_level_timings[node.Id] = len(data) - 1 - data[::-1].index(max_water_level[node.Id])
                         break
 
         if hasattr(data, "Reaches") and include_reaches:
@@ -238,6 +253,9 @@ def get_aggregated_water_levels(
                             aggregated_time_series_data = aggregator(time_series_data) if aggregator is not None else time_series_data
                             element_data.append(aggregated_time_series_data)
                         max_water_level[reach.Id] = aggregator(element_data) if aggregator is not None else element_data
+                        max_water_level_timings[reach.Id] = None
+                        if aggregator is not None:
+                            max_water_level_timings[reach.Id] = len(element_data) - 1 - element_data[::-1].index(max_water_level[reach.Id])
                         break
 
     else:
@@ -254,9 +272,11 @@ def get_aggregated_water_levels(
                     chainage = round(float(chainage), 1)
             else:
                 chainage = f"{chainage}.0"
-            max_water_level[f"{node_id} {chainage}"] = max(water_level_time_series)
+            max_water_level_time_series = max(water_level_time_series)
+            max_water_level[f"{node_id} {chainage}"] = max_water_level_time_series
+            max_water_level_timings[f"{node_id} {chainage}"] = len(water_level_time_series) - 1 - water_level_time_series[::-1].index(max_water_level_time_series)
 
-    return max_water_level
+    return max_water_level, max_water_level_timings
 
 
 if __name__ == "__main__":

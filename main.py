@@ -316,6 +316,16 @@ If the CSV output file is converted to spreadsheet format then this log file sho
         critical_durations=critical_duration_dict,
         ordered_data_files=[split(e)[-1] for e in file_paths],
         round_decimals=not no_round_outputs,
+        timings=False,
+    )
+
+    construct_formatted_csv(
+        data=all_node_data,
+        output_file_path_no_extension=join(abspath(output_directory), f"{output_filename}_timing.csv"),
+        critical_durations=critical_duration_dict,
+        ordered_data_files=[split(e)[-1] for e in file_paths],
+        round_decimals=not no_round_outputs,
+        timings=True,
     )
 
     output_files = [
