@@ -10,7 +10,7 @@ Created on 2021-10-26
 @email: edmund.bennett@ghd.com
 """
 
-from typing import List, Tuple, Union
+from typing import List, Tuple, Optional
 from sys import argv, exit
 from os.path import abspath, join, split, isdir
 from os import getcwd
@@ -36,12 +36,13 @@ warnings.filterwarnings("ignore")
 
 
 def parse_arguments() -> Tuple[
-    Union[None, List[str]],
-    Union[None, List[Union[None, str]]],
-    Union[None, str],
-    Union[None, str],
-    Union[None, str],
-    Union[None, bool]
+    Optional[List[str]],
+    Optional[List[Optional[str]]],
+    Optional[str],
+    Optional[str],
+    Optional[str],
+    Optional[bool],
+    Optional[bool],
 ]:
 
     def get_file_list(path_to_file_list):
@@ -128,6 +129,14 @@ def parse_arguments() -> Tuple[
         action="store_true",
     )
 
+    parser.add_argument(
+        "-t",
+        "--include-timings",
+        help='include separate timing output file indicating timestep of maximum water levels',
+        default=False,
+        action="store_true",
+    )
+
     parsed_args = parser.parse_args()
     critical_durations = None
 
@@ -172,11 +181,12 @@ def parse_arguments() -> Tuple[
             output_filename,
             from_crs,
             parsed_args.no_round_outputs,
+            parsed_args.include_timings,
         )
 
     except Exception as e:
         log.critical(f"Input arguments are not valid. Error: {e}")
-        return None, None, None, None, None, None
+        return None, None, None, None, None, None, None
 
 
 def get_input_paths(
@@ -267,6 +277,7 @@ If the CSV output file is converted to spreadsheet format then this log file sho
         output_filename,
         from_crs,
         no_round_outputs,
+        include_timings,
      ) = parse_arguments()
 
     if output_filename is None:
@@ -319,14 +330,15 @@ If the CSV output file is converted to spreadsheet format then this log file sho
         timings=False,
     )
 
-    construct_formatted_csv(
-        data=all_node_data,
-        output_file_path_no_extension=join(abspath(output_directory), f"{output_filename}_timing.csv"),
-        critical_durations=critical_duration_dict,
-        ordered_data_files=[split(e)[-1] for e in file_paths],
-        round_decimals=not no_round_outputs,
-        timings=True,
-    )
+    if include_timings:
+        construct_formatted_csv(
+            data=all_node_data,
+            output_file_path_no_extension=join(abspath(output_directory), f"{output_filename}_timing.csv"),
+            critical_durations=critical_duration_dict,
+            ordered_data_files=[split(e)[-1] for e in file_paths],
+            round_decimals=not no_round_outputs,
+            timings=True,
+        )
 
     output_files = [
         abspath(f"{output_filename}.csv"),
