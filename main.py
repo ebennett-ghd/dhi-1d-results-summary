@@ -330,6 +330,10 @@ If the CSV output file is converted to spreadsheet format then this log file sho
         timings=False,
     )
 
+    output_files = [
+        abspath(f"{output_filename}.csv"),
+        abspath(f"{output_filename}.log"),
+    ]
     if include_timings:
         construct_formatted_csv(
             data=all_node_data,
@@ -340,10 +344,11 @@ If the CSV output file is converted to spreadsheet format then this log file sho
             timings=True,
         )
 
-    output_files = [
-        abspath(f"{output_filename}.csv"),
-        abspath(f"{output_filename}.log"),
-    ]
+        output_files = [
+            abspath(f"{output_filename}.csv"),
+            abspath(f"{output_filename}_timing.csv"),
+            abspath(f"{output_filename}.log"),
+        ]
 
     if from_crs is not None:
         all_node_geojson = construct_geojson(
