@@ -114,12 +114,10 @@ Readme.txt
 This readme.txt user documentation is developed using simple Markdown syntax [daringfireball.net/projects/markdown](https://daringfireball.net/projects/markdown/syntax)
 which means that it can be readily converted from plaintext to HTML (and other rich text formats) if desired for readability or other future purpose using software tools like "Markdown" [Wiki/Markdown](https://en.wikipedia.org/wiki/Markdown)
 
-Open source code and LGPLv3 licencing
+Open source code and licencing
 -------------------------------------
-The open source code is generally supplied with the ZIP file package and has also been published on Github at ???. <<reference>> 
-Licencing is GNU Lesser General Public License
-[GNU Lesser General Public License v3.0 - GNU Project - Free Software Foundation](https://www.gnu.org/licenses/lgpl-3.0.en.html)
-This licensing prevents modification and distribution of derivative products (like exe files) without also distributing the source code, which ensures improved or derived tools continue to be open source software. 
+The open source code is generally supplied with the ZIP file package and has also been published on Github at https://github.com/ebennett-ghd/dhi-1d-results-summary
+The license is indicated seperately within this repository. This licensing prevents modification and distribution of derivative products (like exe files) without also distributing the source code, which ensures improved or derived tools continue to be open source software. 
 
 Coding Language and Compilation
 ===============================
@@ -135,25 +133,9 @@ STORY
 6. Copy (or move) MAIN.EXE to the desired folder (if required) and rename to DHI_1D_POINTS_READ.EXE
 6. Copy the mikeio1d library package from ProgramData\Anaconda3\Lib\site-packages\mikeio1d into the same folder as the DHI_1D_POINTS_READ.EXE file 
 
-list of software functions (eg: requirements.txt)
----------------------------------------------
-altgraph==0.17.2
-certifi==2021.10.8
-future==0.18.2
-mikeio1d==0.1.0
-numpy==1.21.3
-pandas==1.3.4
-pefile==2021.9.3
-pycparser==2.20
-pyinstaller==4.6
-pyinstaller-hooks-contrib==2021.3
-pyproj==3.2.1
-pyshp==2.1.3
-python-dateutil==2.8.2
-pythonnet==2.5.2
-pytz==2021.3
-pywin32-ctypes==0.2.0
-six==1.16.0
+Requirements (to run code + generate EXE)
+-----------------------------------------
+Requirements are indicated separately within requirements.txt, according to standard Python programming practice.
 
 Example BAT file (to generate EXE)
 ----------------------------------
@@ -168,7 +150,7 @@ pause
 
 VERSION HISTORY AND AUTHORS
 ===========================
-Coding for this tool version was last updated by Edmund Bennett (GHD) on 1/03/2022 (with addition of -t command line option). The tool was developed as open source code by GHD, through work funded by Christchurch City Council. Contributions to the tool design, coding and beta testing were also made by Tim Preston, Yanni Hooi and Rowan De Costa (GHD). Authorisation to release the code under this licencing was given by Kevin McDonnell (CCC) on 16/3/2022 (GHD email repository 12555628). The first publication to Github (https://github.com/ebennett-ghd/dhi-1d-results-summary) was done on 26/3/2022.
+The tool was developed as open source code by GHD, through work funded by Christchurch City Council. Contributions to the tool design, coding and beta testing were also made by Tim Preston, Yanni Hooi and Rowan De Costa (GHD). Authorisation to release the code under this licencing was given by Kevin McDonnell (CCC) on 16/3/2022 (GHD email repository 12555628). The first publication to Github (https://github.com/ebennett-ghd/dhi-1d-results-summary) was done on 25/3/2022.
 
 
 OPPORTUNITIES FOR IMPROVEMENT
