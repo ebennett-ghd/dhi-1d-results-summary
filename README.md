@@ -1,4 +1,4 @@
-DHI 1D POINTS READ tool - User Documentation 22/12/2021
+DHI 1D POINTS READ tool - User Documentation 04/04/2022
 
 INTRODUCTION AND PURPOSE
 ========================
@@ -69,7 +69,7 @@ optional arguments:
 
 Notes:
 the "--XXX_XXX" type arguments are simply more verbose versions with the same function as their one character version
-items in CAPITALS indicate parameters to be defined by the userr
+items in CAPITALS indicate parameters to be defined by the user
 any path including filename that contains a space character will need to be delimited with "" (avoidance of space characters is preferred)
 for INPUT_DIRECTORY do not include a trailing "\" character
 output files will overwrite any existing files
@@ -105,6 +105,9 @@ The extraction of x,y and water level data from RES11 format uses two separate d
 
 Any existing output files will be overwritten by the tool. A future improvement might include prevention of overwriting (tool stops and error reports) and/or a new switch option to enable overwriting.
 
+If processing large job lists, it is advisable to monitor RAM usage (i.e. using Task Manager on a Windows device). If 
+RAM limits are an issue then consider reducing the job list, or finding a computer with more RAM.
+
 RES11READ alternative
 ---------------------
 For RES11 file types, DHI have an existing RES11READ.EXE tool which is able to extract the max of timeseries water level from RES11 files. This tool, however, does not provide the ability to generate simple file list, max of max level, critical duration or any PRF based functionality. Authors of DHI_1D_POINTS_READ anticipate that once users become familiar with this new tool that the RES11READ tool may no longer be useful.
@@ -121,17 +124,19 @@ The license is indicated seperately within this repository. This licensing preve
 
 Coding Language and Compilation
 ===============================
-This tool has been developed using Python v3.7.6, Anaconda code editing interface and the DHI suite of Mike I/O 1D library of tools. [mikeio1d](https://github.com/DHI/mikeio1d). In order to compile a new EXE file after coding improvements are made, we used Anaconda with a list of extensions (most notably PyInstaller and mikeio1d).
+This tool has been developed using Python v3.8, Anaconda code editing interface and the DHI suite of Mike I/O 1D 
+library of tools. [mikeio1d](https://github.com/DHI/mikeio1d). In order to compile a new EXE file after coding improvements are made, we used Anaconda with a list of extensions (most notably PyInstaller and mikeio1d).
 
-STORY
+EXAMPLE STORY
 -----
-1. Install Python v3.7.6 (freeware)
-2. Install Anaconda
-3. Ensure Anaconda is activated in the computer (activate.bat)
-4. Use PIP (part of Anaconda) to install the list of required software extensions (requirements.txt) - this expands the capabilities of Anaconda - PIP installs from known online resources - this needs an internet connection.
+1. Install Python v3.8 (freeware)
+2. Install Anaconda (this step is optional)
+3. Ensure Anaconda is activated in the computer (activate.bat) if using Anaconda
+4. Use PIP to install the list of required modules (requirements.txt) PIP installs from known online resources - this needs an internet connection.
 5. Submit the main code (main.py) into PyInstaller to generate the main.EXE file into the current directory (if using a bat file this is the directory where the bat file is saved)
 6. Copy (or move) MAIN.EXE to the desired folder (if required) and rename to DHI_1D_POINTS_READ.EXE
-6. Copy the mikeio1d library package from ProgramData\Anaconda3\Lib\site-packages\mikeio1d into the same folder as the DHI_1D_POINTS_READ.EXE file 
+7. Copy the mikeio1d library package from ProgramData\Anaconda3\Lib\site-packages\mikeio1d into the same folder as the 
+   DHI_1D_POINTS_READ.EXE file 
 
 Requirements (to run code + generate EXE)
 -----------------------------------------
@@ -139,13 +144,10 @@ Requirements are indicated separately within requirements.txt, according to stan
 
 Example BAT file (to generate EXE)
 ----------------------------------
-..to achieve steps 3-6 above is as follows
-call "C:\ProgramData\Anaconda3\Scripts\activate.bat"
-pip install -r requirements.txt
-RD /S /Q C:\Users\Tuflowchcuser\Desktop\Temp\Dhi1DResultSummary\dist
-"C:\ProgramData\Anaconda3\Scripts\pyinstaller.exe" --noconfirm main.py
-Xcopy /E /I /S C:\ProgramData\Anaconda3\Lib\site-packages\mikeio1d
-pause
+The process to achieve steps 3-6 above is as follows. Call:
+`C:\ProgramData\Anaconda3\Scripts\activate.bat`
+`pip install -r requirements.txt`
+`create_exe.bat`
 
 
 VERSION HISTORY AND AUTHORS
