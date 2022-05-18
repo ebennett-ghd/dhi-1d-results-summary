@@ -331,7 +331,7 @@ If the CSV output file is converted to spreadsheet format then this log file sho
     )
 
     output_files = [
-        abspath(f"{output_filename}.csv"),
+        abspath(join(output_directory, f"{output_filename}.csv")),
         abspath(f"{output_filename}.log"),
     ]
     if include_timings:
@@ -345,9 +345,9 @@ If the CSV output file is converted to spreadsheet format then this log file sho
         )
 
         output_files = [
-            abspath(f"{output_filename}.csv"),
-            abspath(f"{output_filename}_timing.csv"),
-            abspath(f"{output_filename}.log"),
+            abspath(join(output_directory, f"{output_filename}.csv")),
+            abspath(join(output_directory, f"{output_filename}_timing.csv")),
+            abspath(join(output_directory, f"{output_filename}.log")),
         ]
 
     if from_crs is not None:
@@ -358,7 +358,7 @@ If the CSV output file is converted to spreadsheet format then this log file sho
 
         with open(join(output_directory, f"{output_filename}.geojson"), "w") as geo_file:
             dump(all_node_geojson, geo_file)
-        output_files.append(abspath(f"{output_filename}.geojson"))
+        output_files.append(join(output_directory, abspath(f"{output_filename}.geojson")))
 
     log_payload["output_files"] = output_files
 
