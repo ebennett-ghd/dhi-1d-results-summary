@@ -32,7 +32,7 @@ Usage switch syntax
 
 Running the tool with a -h switch will print out the following list of all the available switches.
 
-DHI_1D_POINTS_READ.EXE - Compiled 21/12/2021
+DHI_1D_POINTS_READ.EXE - Compiled 19/05/2022
 
 usage: DHI_1D_POINTS_READ.EXE [-h] [-i INPUT_DIRECTORY] [-o OUTPUT_PATH_AND_FILENAME]
                 [-f PATH_TO_LISTFILE.xxx] [-p FROM_CRS] [-s] [-l] [-r]
@@ -95,7 +95,7 @@ The EXE file requires a package of library files to be present adjacent to the s
 
 System requirements
 -------------------
-The tool is expected to run well on current common Windows environment PCs. The CSV is formatted to open ready into suit Excel for Microsoft 365, 2021. And equally is equally readily imported into current versions of ArcMap.
+The tool is expected to run well on current common Windows environment PCs. The CSV is formatted to open ready into suit Excel for Microsoft 365, 2021. And equally is readily imported into current versions of ArcMap.
 
 Known issues and limitations
 ----------------------------
